@@ -86,7 +86,7 @@ public class DecompressAction extends Action {
     } else {
       // Convert all the files in a directory
       PathFilter filter = new PathFilter() {
-        private final Pattern pattern = Pattern.compile(config.fileRegex);
+        private final Pattern pattern = Pattern.compile(config.getFileRegex());
 
         @Override
         public boolean accept(Path path) {
@@ -101,7 +101,7 @@ public class DecompressAction extends Action {
 
       if (listFiles.length == 0) {
         LOG.warn("Not converting any files from source {} matching regular expression {}",
-                 source.toString(), config.fileRegex);
+                 source.toString(), config.getFileRegex());
       }
 
       if (fileSystem.exists(dest) && fileSystem.isFile(dest)) {
@@ -240,12 +240,16 @@ public class DecompressAction extends Action {
         this.fileRegex = (Strings.isNullOrEmpty(fileRegex)) ? ".*" : fileRegex;
       }
 
+      public String getFileRegex() {
+        return (Strings.isNullOrEmpty(fileRegex)) ? ".*" : fileRegex;
+      }
+
       /**
        * Validates the config parameters required for unloading the data.
        */
       private void validate() throws IllegalArgumentException {
         try {
-          Pattern.compile(fileRegex);
+          Pattern.compile(getFileRegex());
         } catch (Exception e) {
           throw new IllegalArgumentException("The regular expression pattern provided is not a valid " +
                                                "regular expression.", e);
