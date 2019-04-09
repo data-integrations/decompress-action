@@ -13,20 +13,18 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package co.cask.hydrator.plugin;
+package io.cdap.plugin;
 
-
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.action.Action;
-import co.cask.cdap.etl.api.action.ActionContext;
 
 import com.google.common.base.Strings;
-
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.action.Action;
+import io.cdap.cdap.etl.api.action.ActionContext;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
@@ -86,7 +84,7 @@ public class DecompressAction extends Action {
     } else {
       // Convert all the files in a directory
       PathFilter filter = new PathFilter() {
-        private final Pattern pattern = Pattern.compile(config.fileRegex);
+        private final Pattern pattern = Pattern.compile(config.getFileRegex());
 
         @Override
         public boolean accept(Path path) {
@@ -101,7 +99,7 @@ public class DecompressAction extends Action {
 
       if (listFiles.length == 0) {
         LOG.warn("Not converting any files from source {} matching regular expression {}",
-                 source.toString(), config.fileRegex);
+                 source.toString(), config.getFileRegex());
       }
 
       if (fileSystem.exists(dest) && fileSystem.isFile(dest)) {
@@ -240,12 +238,16 @@ public class DecompressAction extends Action {
         this.fileRegex = (Strings.isNullOrEmpty(fileRegex)) ? ".*" : fileRegex;
       }
 
+      public String getFileRegex() {
+        return (Strings.isNullOrEmpty(fileRegex)) ? ".*" : fileRegex;
+      }
+
       /**
        * Validates the config parameters required for unloading the data.
        */
       private void validate() throws IllegalArgumentException {
         try {
-          Pattern.compile(fileRegex);
+          Pattern.compile(getFileRegex());
         } catch (Exception e) {
           throw new IllegalArgumentException("The regular expression pattern provided is not a valid " +
                                                "regular expression.", e);

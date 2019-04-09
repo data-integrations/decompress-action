@@ -1,5 +1,9 @@
 # Decompress Action
 
+![cm-available](https://cdap-users.herokuapp.com/assets/cm-available.svg)
+![cdap-action](https://cdap-users.herokuapp.com/assets/cdap-action.svg)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Join CDAP community](https://cdap-users.herokuapp.com/badge.svg?t=wrangler)](https://cdap-users.herokuapp.com?t=1)
 
 Description
 -----------

@@ -14,9 +14,9 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin;
+package io.cdap.plugin;
 
-import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
