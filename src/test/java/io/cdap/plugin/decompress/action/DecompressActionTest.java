@@ -14,7 +14,7 @@
  * the License.
  */
 
-package io.cdap.plugin;
+package io.cdap.plugin.decompress.action;
 
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
 import org.junit.ClassRule;

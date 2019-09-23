@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package io.cdap.plugin;
+package io.cdap.plugin.decompress.action;
 
 
 import com.google.common.base.Strings;
