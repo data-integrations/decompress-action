@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.decompress.action;
 
+import io.cdap.cdap.etl.mock.action.MockActionContext;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -55,12 +56,12 @@ public class DecompressActionTest {
     ClassLoader classLoader = getClass().getClassLoader();
     URL gzippedFile = classLoader.getResource(GZIPPED_FILE_NAME);
     File destFolder = temporaryFolder.newFolder();
-    DecompressAction.DecompressActionConfig config = new DecompressAction.DecompressActionConfig(gzippedFile.getFile(),
-                                                                     destFolder.getPath() + "/" + UNGZIPPED_FILE_NAME,
-                                                                     null, "Compressed", false);
+    DecompressActionConfig config = new DecompressActionConfig(gzippedFile.getFile(),
+                                                               destFolder.getPath() + "/" + UNGZIPPED_FILE_NAME,
+                                                               null, "Compressed", false);
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(null);
     new DecompressAction(config).configurePipeline(configurer);
-    new DecompressAction(config).run(null);
+    new DecompressAction(config).run(new MockActionContext());
     assertEquals(1, destFolder.listFiles(filter).length);
     assertEquals(UNGZIPPED_FILE_NAME, destFolder.listFiles(filter)[0].getName());
   }
@@ -70,12 +71,12 @@ public class DecompressActionTest {
     ClassLoader classLoader = getClass().getClassLoader();
     URL gzippedFile = classLoader.getResource(GZIPPED_FILE_NAME);
     File destFolder = temporaryFolder.newFolder();
-    DecompressAction.DecompressActionConfig config = new DecompressAction.DecompressActionConfig(gzippedFile.getFile(),
-                                                                                                 destFolder.getPath(),
-                                                                                                 null, "Compressed", false);
+    DecompressActionConfig config = new DecompressActionConfig(gzippedFile.getFile(),
+                                                               destFolder.getPath(),
+                                                               null, "Compressed", false);
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(null);
     new DecompressAction(config).configurePipeline(configurer);
-    new DecompressAction(config).run(null);
+    new DecompressAction(config).run(new MockActionContext());
     assertEquals(1, destFolder.listFiles(filter).length);
     assertEquals(UNGZIPPED_FILE_NAME, destFolder.listFiles(filter)[0].getName());
   }
@@ -85,12 +86,12 @@ public class DecompressActionTest {
     ClassLoader classLoader = getClass().getClassLoader();
     URL zippedFile = classLoader.getResource(ZIPPED_FILE_NAME);
     File destFolder = temporaryFolder.newFolder();
-    DecompressAction.DecompressActionConfig config = new DecompressAction.DecompressActionConfig(zippedFile.getFile(),
-                                                                                                 destFolder.getPath(),
-                                                                                                 null, "Archived", false);
+    DecompressActionConfig config = new DecompressActionConfig(zippedFile.getFile(),
+                                                               destFolder.getPath(),
+                                                               null, "Archived", false);
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(null);
     new DecompressAction(config).configurePipeline(configurer);
-    new DecompressAction(config).run(null);
+    new DecompressAction(config).run(new MockActionContext());
     assertEquals(2, new File(destFolder.getPath() + "/example").listFiles(filter).length);
   }
 
@@ -99,12 +100,12 @@ public class DecompressActionTest {
     ClassLoader classLoader = getClass().getClassLoader();
     URL tarredFile = classLoader.getResource(TARRED_FILE_NAME);
     File destFolder = temporaryFolder.newFolder();
-    DecompressAction.DecompressActionConfig config = new DecompressAction.DecompressActionConfig(tarredFile.getFile(),
-                                                                                                 destFolder.getPath(),
-                                                                                                 null, "Archived", false);
+    DecompressActionConfig config = new DecompressActionConfig(tarredFile.getFile(),
+                                                               destFolder.getPath(),
+                                                               null, "Archived", false);
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(null);
     new DecompressAction(config).configurePipeline(configurer);
-    new DecompressAction(config).run(null);
+    new DecompressAction(config).run(new MockActionContext());
     assertEquals(2, new File(destFolder.getPath() + "/example").listFiles(filter).length);
   }
 
@@ -113,12 +114,12 @@ public class DecompressActionTest {
     ClassLoader classLoader = getClass().getClassLoader();
     URL tarredGZippedFile = classLoader.getResource(TARRED_GZIPPED_FILE_NAME);
     File destFolder = temporaryFolder.newFolder();
-    DecompressAction.DecompressActionConfig config = new DecompressAction.DecompressActionConfig(tarredGZippedFile.getFile(),
-                                                                                                 destFolder.getPath(),
-                                                                                                 null,  "Archived then compressed", false);
+    DecompressActionConfig config = new DecompressActionConfig(tarredGZippedFile.getFile(),
+                                                               destFolder.getPath(),
+                                                               null, "Archived then compressed", false);
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(null);
     new DecompressAction(config).configurePipeline(configurer);
-    new DecompressAction(config).run(null);
+    new DecompressAction(config).run(new MockActionContext());
     assertEquals(2, new File(destFolder.getPath() + "/example").listFiles(filter).length);
   }
 }
