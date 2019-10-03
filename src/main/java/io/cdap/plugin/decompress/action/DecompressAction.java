@@ -16,12 +16,10 @@
 package io.cdap.plugin.decompress.action;
 
 
-import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
-import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
-import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.action.Action;
 import io.cdap.cdap.etl.api.action.ActionContext;
@@ -45,7 +43,6 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
 
 /**
  * Action to expand compressed or archived files before processing in a pipeline
@@ -66,14 +63,19 @@ public class DecompressAction extends Action {
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
-    config.validate();
+    FailureCollector failureCollector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    config.validate(failureCollector);
+    failureCollector.getOrThrowException();
   }
 
   @Override
   public void run(ActionContext context) throws Exception {
-    config.validate();
-    Path source = new Path(config.sourceFilePath);
-    Path dest = new Path(config.destFilePath);
+    FailureCollector failureCollector = context.getFailureCollector();
+    config.validate(failureCollector);
+    failureCollector.getOrThrowException();
+
+    Path source = new Path(config.getSourceFilePath());
+    Path dest = new Path(config.getDestFilePath());
 
     FileSystem fileSystem = source.getFileSystem(new Configuration());
     fileSystem.mkdirs(dest.getParent());
@@ -105,7 +107,7 @@ public class DecompressAction extends Action {
       if (fileSystem.exists(dest) && fileSystem.isFile(dest)) {
         throw new IllegalArgumentException(
           String.format("Destination %s needs to be a directory since the source is a " +
-                          "directory", config.destFilePath));
+                          "directory", config.getDestFilePath()));
       }
       // create destination directory if necessary
       fileSystem.mkdirs(dest);
@@ -121,7 +123,7 @@ public class DecompressAction extends Action {
 
   private void convertSingleFile(Path source, Path dest, FileSystem fileSystem)
     throws ArchiveException, CompressorException, IOException, IllegalArgumentException {
-    switch (config.archivedOrCompressed.toLowerCase()) {
+    switch (config.getArchivedOrCompressed().toLowerCase()) {
       case "compressed" :
         processCompressedFiles(source, dest, fileSystem);
         break;
@@ -136,7 +138,7 @@ public class DecompressAction extends Action {
       default:
         throw new IllegalArgumentException("archivedOrCompressed must be one of " +
                                              "'archived','compressed', or 'archive then compressed' " +
-                                             "but was: " + config.archivedOrCompressed);
+                                             "but was: " + config.getArchivedOrCompressed());
     }
   }
 
@@ -166,12 +168,12 @@ public class DecompressAction extends Action {
         entry = input.getNextEntry();
       }
     } catch (ArchiveException e) {
-      if (!config.continueOnError) {
+      if (!config.getContinueOnError()) {
         throw new ArchiveException(String.format("Failed to expand archived files %s to %s", source.toString(), dest.toString()), e);
       }
       LOG.warn(String.format("Failed to expand archived files %s to %s", source.toString(), dest.toString()), e);
     } catch (IOException e) {
-      if (!config.continueOnError) {
+      if (!config.getContinueOnError()) {
         throw new IOException(String.format("Failed to expand archived files %s to %s", source.toString(), dest.toString()), e);
       }
       LOG.warn(String.format("Failed to expand archived files %s to %s", source.toString(), dest.toString()), e);
@@ -187,89 +189,16 @@ public class DecompressAction extends Action {
          BufferedOutputStream out = new BufferedOutputStream(fileSystem.create(actualDestPath), BUFFER_SIZE)) {
       IOUtils.copy(input, out);
     } catch (CompressorException e) {
-      if (!config.continueOnError) {
+      if (!config.getContinueOnError()) {
         throw new CompressorException(String.format("Failed to expand compressed files %s to %s", source.toString(), dest.toString()), e);
       }
       LOG.warn(String.format("Failed to expand compressed files %s to %s", source.toString(), dest.toString()), e);
     } catch (IOException e) {
-      if (!config.continueOnError) {
+      if (!config.getContinueOnError()) {
         throw new IOException(String.format("Failed to expand compressed files %s to %s", source.toString(), dest.toString()), e);
       }
       LOG.warn(String.format("Failed to expand compressed files %s to %s", source.toString(), dest.toString()), e);
     }
     return actualDestPath;
-  }
-
-
-  /**
-   *  Config for the action to decompress gz files from a container on Azure Storage Blob service into another container
-   */
-  public static class DecompressActionConfig extends PluginConfig {
-      @Macro
-      @Description("The source location where the file or files live. You can use glob syntax here such as *.gz.")
-      private String sourceFilePath;
-
-      @Macro
-      @Description("The destination location where the converted files should be.")
-      private String destFilePath;
-
-      @Macro
-      @Nullable
-      @Description("A regular expression for filtering files such as .*\\.txt")
-      private String fileRegex;
-
-      @Macro
-      @Description("Are you processing archived files (E.g. .tar or .zip), compressed files (E.g. .gz or .bz2), or " +
-        "archived then compressed filed (E.g. .tar.gz)")
-      private String archivedOrCompressed;
-
-      @Macro
-      @Nullable
-      @Description("Set to true if this plugin should ignore errors.")
-      private Boolean continueOnError;
-
-
-      public DecompressActionConfig(String sourceFilePath, String destFilePath, @Nullable String fileRegex,
-                                    String archivedOrCompressed, @Nullable Boolean continueOnError) {
-        this.sourceFilePath = sourceFilePath;
-        this.destFilePath = destFilePath;
-        this.continueOnError = (continueOnError == null) ? false : continueOnError;
-        this.archivedOrCompressed = archivedOrCompressed;
-        this.fileRegex = (Strings.isNullOrEmpty(fileRegex)) ? ".*" : fileRegex;
-      }
-
-      public String getFileRegex() {
-        return (Strings.isNullOrEmpty(fileRegex)) ? ".*" : fileRegex;
-      }
-
-      /**
-       * Validates the config parameters required for unloading the data.
-       */
-      private void validate() throws IllegalArgumentException {
-        try {
-          Pattern.compile(getFileRegex());
-        } catch (Exception e) {
-          throw new IllegalArgumentException("The regular expression pattern provided is not a valid " +
-                                               "regular expression.", e);
-        }
-        if (Strings.isNullOrEmpty(sourceFilePath)) {
-          throw new IllegalArgumentException("Source file or folder is required.");
-        }
-        if (Strings.isNullOrEmpty(destFilePath)) {
-          throw new IllegalArgumentException("Destination file or folder is required.");
-        }
-        try {
-          Path source = new Path(sourceFilePath);
-          FileSystem fileSystem = source.getFileSystem(new Configuration());
-        } catch (IOException e) {
-          throw new IllegalArgumentException("Cannot determine the file system of the source file.", e);
-        }
-        if (Strings.isNullOrEmpty(archivedOrCompressed) || (
-          !archivedOrCompressed.toLowerCase().equals("archived") &&
-          !archivedOrCompressed.toLowerCase().equals("compressed") &&
-          !archivedOrCompressed.toLowerCase().equals("archived then compressed"))) {
-          throw new IllegalArgumentException("You must specify if you are processing archive files, compressed files, or both.");
-        }
-      }
   }
 }
