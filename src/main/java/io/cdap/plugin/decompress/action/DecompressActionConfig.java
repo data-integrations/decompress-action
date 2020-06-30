@@ -21,6 +21,7 @@ import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.api.plugin.PluginProperties;
 import io.cdap.cdap.etl.api.FailureCollector;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -137,31 +138,21 @@ public class DecompressActionConfig extends PluginConfig {
     if (!containsMacro(SOURCE_FILE_PATH) && Strings.isNullOrEmpty(sourceFilePath)) {
       collector.addFailure("Source file or folder is required.", null)
         .withConfigProperty(SOURCE_FILE_PATH);
-    } else {
-      try {
-        Path source = new Path(sourceFilePath);
-        FileSystem fileSystem = source.getFileSystem(new Configuration());
-      } catch (IOException e) {
-        collector.addFailure("Cannot determine the file system of the source file.", null)
-          .withConfigProperty(SOURCE_FILE_PATH)
-          .withStacktrace(e.getStackTrace());
-      }
     }
-
     if (!containsMacro(DEST_FILE_PATH) && Strings.isNullOrEmpty(destFilePath)) {
       collector.addFailure("Destination file or folder is required.", null)
         .withConfigProperty(DEST_FILE_PATH);
     }
 
-    if (!containsMacro(ARCHIVED_OR_COMPRESSED) && Strings.isNullOrEmpty(archivedOrCompressed) || (
+    if (!containsMacro(ARCHIVED_OR_COMPRESSED) && (Strings.isNullOrEmpty(archivedOrCompressed) || (
       !archivedOrCompressed.toLowerCase().equals("archived") &&
         !archivedOrCompressed.toLowerCase().equals("compressed") &&
-        !archivedOrCompressed.toLowerCase().equals("archived then compressed"))) {
+        !archivedOrCompressed.toLowerCase().equals("archived then compressed")))) {
       collector.addFailure("You must specify if you are processing archive files, compressed files, or both.", null)
         .withConfigProperty(ARCHIVED_OR_COMPRESSED);
     }
 
-    if (Objects.isNull(continueOnError)) {
+    if (!containsMacro(CONTINUE_ON_ERROR) && Objects.isNull(continueOnError)) {
       collector.addFailure("Continue on error must be specified.", null)
         .withConfigProperty(CONTINUE_ON_ERROR);
     }
